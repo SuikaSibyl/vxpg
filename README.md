@@ -22,7 +22,8 @@ Here is a walkthrough of relevant files and codes:
 
 The render pipelines in ```SIByL``` are defined and scheduled with Render Dependency Graph (RDG).
 
-In the paper, we present 3 variants of vxpg pipeline:
+For simplicity, I serialize the pipeline and show them below.
+In the paper, we present 3 variants of ```vxpg``` pipeline:
 
 #### 1. vanilla vxpg [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Sandbox/src/CustomPipeline.hpp#L1063)]
 | High-Level Pipeline | Actual Pass | Description | Code |
@@ -40,7 +41,7 @@ In the paper, we present 3 variants of vxpg pipeline:
 |  | RowVisibilityPass | for each voxel, use the selected vertex to evaluate the mutual visibility with every representative pixels proposed in 👆 pass; then pack the visiblity as a unsigned int bitfield |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L5189)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/mrcs/mrcs/row-visibility.slang)]|
 |  | RowKmppCenterPass | use kmpp to initialize voxel cluster center by visibility bitfield | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L5259)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/mrcs/column-kmpp-seeding.slang)]|
 |  | RowFindCenterPass | find the nearest voxel cluster, which has most similar visibility bitfield  |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L5334)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/mrcs/column-find-center.slang)] |
-| Supervoxel Merging | VXTreeEncodePass | encode the voxels with cluster and position information  |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L4542)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/mrcs/column-find-center.slang)] |
+| Supervoxel Merging (optional) | VXTreeEncodePass | encode the voxels with cluster and position information  |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L4542)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/mrcs/column-find-center.slang)] |
 |   | BitonicSort Subgraph | sort the voxels as tree leaves for parallel tree building  |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/BitonicSort/Private/SE.Addon.BitonicSort.cpp)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/bitonicsort)] |
 |  | VXTreeIIntializePass | initialize tree leaves and nodes for parallel tree building |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L4542)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/tree/tree-initial-pass.slang)] |
 |  | VXTreeInternalPass | and this is parallel binary tree building |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L4306)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/tree/tree-internal-pass.slang)] |
@@ -52,13 +53,21 @@ In the paper, we present 3 variants of vxpg pipeline:
 |   |  VXTreeTopLevelPass | build the sampling distribution for LightSlice |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L4444)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/tree/tree-top-level-constr.comp)] |
 |  Path Tracing!! |  VXGuiderGIPass | do adaptive guided sample, and MIS here |  [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VXGuiding/Private/SE.Addon.VXGuiding.cpp#L133)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vxguiding/vxguiding-gi.slang)] |
 
-#### 2. ReSTIR GI + vxpg[[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Sandbox/src/CustomPipeline.hpp#L1458)]
+#### 2. ReSTIR GI + vxpg [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Sandbox/src/CustomPipeline.hpp#L1458)]
 
 | High-Level Pipeline | Actual Pass | Description | Code |
 |------|-------|-------|----|
 | Render VBuffer | RayTraceVBuffer | render and hold V-Buffer for further reuse of 1st shading points | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VBuffer/Private/SE.Addon.VBuffer.cpp#L5)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vbuffer/raytraced-vbuffer.slang)] |
+| Hold GBuffer | VBuffer2GBufferPass | convert VBuffer to GBuffer for ReSTIR usage | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/VBuffer/Private/SE.Addon.VBuffer.cpp#L73)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/vbuffer/vbuffer-2-gbuffer.slang)] |
+| | GBufferHolderSource | hold and load the GBuffer from previous frame | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/GBuffer/Private/SE.Addon.GBufferPass.cpp#L731)] |
+| VXPG | ... | all passes similar to previous section, the only difference is that the guided samples are stored as proposal reservoirs | 👆 |
+| ReSTIR Reuse | TemporalResampling | temporal reuse | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/RestirGI/Private/SE.Addon.RestirGI.cpp#L94)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/restirgi/gi-temporal-resample.slang)] |
+|   | SpatialResampling | spatial reuse | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/RestirGI/Private/SE.Addon.RestirGI.cpp#L199)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/restirgi/gi-spatial-resampling.slang)] |
+| Shading | FinalShading | finally shading the scene with ReSTIR samples | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/RestirGI/Private/SE.Addon.RestirGI.cpp#L281)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/restirgi/gi-final-shading.slang)] |
 
-#### 3. A-SVGF + vxpg
+#### 3. A-SVGF + vxpg [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Sandbox/src/CustomPipeline.hpp#L663)]
 
-
-### Passes
+| High-Level Pipeline | Actual Pass | Description | Code |
+|------|-------|-------|----|
+| VXPG | ... | all passes similar to previous section, the only difference is that the guided samples are stored as proposal reservoirs | 👆 |
+| A-SVGF | ... | again lots of passes for A-SVGF, just read the code 👉 | [[cpp](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Source/Addon/ASVGF/Private/SE.Addon.ASVGF.cpp)][[slang](https://github.com/SuikaSibyl/SIByLEngine2023/blob/8c1adad28c16e07592bc79122cb9d0c9738699bc/Engine/Shaders/SRenderer/addon/asvgf)] |
